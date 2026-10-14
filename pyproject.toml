@@ -1,0 +1,16 @@
+[project]
+name = "receipt-ai-budget"
+version = "0.1.0"
+description = "Self-hosted Telegram bot that reads receipts with AI and tells you how much you can spend today."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

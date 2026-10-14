@@ -1,0 +1,43 @@
+@startuml sequence
+title Left to Spend: receipt flow and /balance
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+skinparam ArrowColor #475569
+skinparam ParticipantBackgroundColor #F8FAFC
+skinparam ParticipantBorderColor #334155
+
+actor Owner
+participant "Telegram Bot" as Bot
+participant "Gemini API" as Gemini
+participant "Schema Validator" as Val
+participant "Google Sheets" as Sheets
+participant "Budget Engine" as Engine
+
+== Log a receipt ==
+Owner -> Bot : photo of a receipt
+alt user_id not allowed
+  Bot --> Owner : (ignored)
+else allowed
+  Bot -> Gemini : image + prompt + response_schema
+  Gemini --> Bot : JSON (date, amount, place, category)
+  Bot -> Val : validate(record)
+  Val --> Bot : ok
+  Bot --> Owner : "R$ 42,90 at Market, Food. Save?"
+  alt Yes
+    Owner -> Bot : Yes
+    Bot -> Sheets : append row to Expenses
+    Bot --> Owner : saved
+  else Fix
+    Owner -> Bot : correction
+    Bot -> Gemini : correction + previous record
+  end
+end
+
+== Ask for the balance ==
+Owner -> Bot : /balance
+Bot -> Sheets : read Config, Income, Fixed,\nInstallments, Expenses
+Sheets --> Bot : rows
+Bot -> Engine : compute(rows, today)
+Engine --> Bot : available, per day
+Bot --> Owner : "R$ 1.901,60 left, R$ 95,08 per day"
+@enduml

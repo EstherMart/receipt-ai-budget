@@ -1,0 +1,52 @@
+@startuml architecture
+title Left to Spend: component diagram
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+skinparam ArrowColor #475569
+skinparam component {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+}
+skinparam package {
+  BorderColor #64748B
+  FontColor #334155
+}
+
+actor "Owner" as user
+cloud "Telegram" as tg
+
+package "Bot (Python)" {
+  component "Telegram Handler\n(python-telegram-bot)" as handler
+  component "Access Filter\nALLOWED_TELEGRAM_USER_ID" as filter
+  component "Gemini Client\n(google-genai)\ninterpret_request()" as ai #E0F2FE
+  component "Schema Validator\namount > 0, valid date,\ncategory in list" as validator #FEF3C7
+  component "Confirmation Flow\nYes / Fix" as confirm
+  component "Budget Engine\npure code, unit-tested" as engine #FDE68A
+  component "Sheets Repository\n(gspread)" as repo
+}
+
+cloud "Google Gemini API" as gemini #E0F2FE
+database "Google Sheets\nExpenses · Income · Fixed\nInstallments · Config" as sheets #DCFCE7
+
+user --> tg : photo, sentence,\n/balance
+tg --> handler : update
+handler --> filter
+filter ..> handler : other users ignored
+handler --> ai : receipt or sentence
+ai --> gemini : prompt + image\nresponse_schema
+ai --> validator : structured record
+validator --> confirm : valid record
+confirm --> ai : fix
+confirm --> repo : confirmed
+repo --> sheets : read / write
+handler --> engine : /balance,\n"can I buy this?"
+engine --> repo : load data
+engine --> handler : balance, per day,\nsimulation
+handler --> tg : reply
+
+note right of engine
+  The AI only interprets.
+  All money math runs here.
+end note
+@enduml
